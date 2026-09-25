@@ -1,0 +1,8 @@
+{
+  "name": "Nexora Arena - Esports Tournament Platform",
+  "description": "Original browser-based esports tournament platform featuring server-authoritative Reaction Grid Duel, automated brackets, anti-cheat telemetry, and AI fair-play analysis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

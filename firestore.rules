@@ -1,0 +1,146 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+      return isAuthenticated() && getUserData().role == role;
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function isModerator() {
+      return hasRole('moderator') || isAdmin();
+    }
+
+    function isOrganizer() {
+      return hasRole('organizer') || isAdmin();
+    }
+
+    // Users collection: Private PII
+    match /users/{userId} {
+      allow get: if isUser(userId) || isModerator();
+      allow list: if isAdmin();
+      allow create: if isUser(userId) && request.resource.data.role == 'player';
+      allow update: if (isUser(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status']))
+                    || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Player profiles: Public gaming stats
+    match /playerProfiles/{userId} {
+      allow get, list: if isAuthenticated();
+      allow create, update: if isUser(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Teams
+    match /teams/{teamId} {
+      allow get, list: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.captainId == request.auth.uid;
+      allow update: if (isAuthenticated() && resource.data.captainId == request.auth.uid) || isAdmin();
+      allow delete: if (isAuthenticated() && resource.data.captainId == request.auth.uid) || isAdmin();
+    }
+
+    // Tournaments
+    match /tournaments/{tournamentId} {
+      allow get, list: if true; // Public discovery
+      allow create: if isOrganizer();
+      allow update: if (isOrganizer() && resource.data.organizerId == request.auth.uid) || isAdmin();
+      allow delete: if isAdmin();
+
+      match /registrations/{regId} {
+        allow get, list: if isAuthenticated();
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isOrganizer();
+      }
+    }
+
+    // Matches: Critical Server-Authoritative Boundary
+    match /matches/{matchId} {
+      allow get: if isAuthenticated() && (
+        resource.data.player1.userId == request.auth.uid ||
+        resource.data.player2.userId == request.auth.uid ||
+        isModerator()
+      );
+      allow list: if isModerator();
+      // Only server service account or admin can write match state directly
+      allow create, update, delete: if isAdmin();
+
+      match /events/{eventId} {
+        allow get, list: if isAuthenticated() && (
+          get(/databases/$(database)/documents/matches/$(matchId)).data.player1.userId == request.auth.uid ||
+          get(/databases/$(database)/documents/matches/$(matchId)).data.player2.userId == request.auth.uid ||
+          isModerator()
+        );
+        // Players append telemetry actions, strictly bound to their own uid
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if false; // Append-only audit trail
+      }
+    }
+
+    // Match Results: Immutable and Server-Verified
+    match /matchResults/{resultId} {
+      allow get, list: if isAuthenticated();
+      // Clients NEVER directly write match results. Only server/admin writes
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Fair Play Cases: Confidential anti-cheat records
+    match /fairPlayCases/{caseId} {
+      allow get: if isModerator() || (isAuthenticated() && resource.data.suspectUserId == request.auth.uid);
+      allow list: if isModerator();
+      allow create, update: if isModerator();
+      allow delete: if isAdmin();
+    }
+
+    // Disputes & Appeals
+    match /disputes/{disputeId} {
+      allow get: if isModerator() || (isAuthenticated() && resource.data.petitionerUserId == request.auth.uid);
+      allow list: if isModerator() || isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.petitionerUserId == request.auth.uid;
+      allow update: if isModerator();
+      allow delete: if isAdmin();
+    }
+
+    // In-App Notifications
+    match /notifications/{notificationId} {
+      allow get, list: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow create: if isModerator();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Audit Logs: Append-only ledger
+    match /auditLogs/{logId} {
+      allow get, list: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // strictly immutable
+    }
+
+    // App Settings
+    match /appSettings/{settingId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}

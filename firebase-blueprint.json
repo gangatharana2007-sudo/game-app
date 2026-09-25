@@ -1,0 +1,266 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Core authentication user profile record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string", "maxLength": 50 },
+        "role": { "type": "string", "enum": ["player", "organizer", "moderator", "admin"] },
+        "emailVerified": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["active", "suspended", "banned", "under_investigation"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email", "displayName", "role", "emailVerified", "status", "createdAt", "updatedAt"]
+    },
+    "PlayerProfile": {
+      "title": "PlayerProfile",
+      "description": "Public competitive gaming stats and anonymous alias mapping.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "anonymousAlias": { "type": "string", "maxLength": 30 },
+        "skillRating": { "type": "number" },
+        "matchesPlayed": { "type": "number" },
+        "matchesWon": { "type": "number" },
+        "matchesLost": { "type": "number" },
+        "fairPlayScore": { "type": "number" },
+        "preferredLanguage": { "type": "string", "enum": ["en", "ta"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "anonymousAlias", "skillRating", "fairPlayScore", "createdAt", "updatedAt"]
+    },
+    "Team": {
+      "title": "Team",
+      "description": "Roster and team invitation container.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 40 },
+        "tag": { "type": "string", "maxLength": 5 },
+        "captainId": { "type": "string" },
+        "inviteCode": { "type": "string", "maxLength": 10 },
+        "maxMembers": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "tag", "captainId", "inviteCode", "createdAt", "updatedAt"]
+    },
+    "Tournament": {
+      "title": "Tournament",
+      "description": "Esports tournament specification and status.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 100 },
+        "gameId": { "type": "string" },
+        "organizerId": { "type": "string" },
+        "format": { "type": "string", "enum": ["single_elimination", "round_robin", "double_elimination", "swiss"] },
+        "status": { "type": "string", "enum": ["draft", "registration_open", "registration_closed", "in_progress", "completed", "cancelled"] },
+        "entryType": { "type": "string", "enum": ["free", "invite_only", "ranked_qualifier"] },
+        "teamSize": { "type": "number" },
+        "maxParticipants": { "type": "number" },
+        "registrationDeadline": { "type": "string", "format": "date-time" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "gracePeriodSeconds": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "gameId", "organizerId", "format", "status", "startDate", "createdAt", "updatedAt"]
+    },
+    "TournamentRegistration": {
+      "title": "TournamentRegistration",
+      "description": "Participant registration in a tournament.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "tournamentId": { "type": "string" },
+        "userId": { "type": "string" },
+        "status": { "type": "string", "enum": ["confirmed", "waitlist", "disqualified", "withdrawn"] },
+        "registeredAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "tournamentId", "userId", "status", "registeredAt", "createdAt", "updatedAt"]
+    },
+    "Match": {
+      "title": "Match",
+      "description": "Server-orchestrated esports match instance.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "tournamentId": { "type": "string" },
+        "gameId": { "type": "string" },
+        "status": { "type": "string", "enum": ["WAITING", "READY", "COUNTDOWN", "ACTIVE", "PAUSED", "COMPLETED", "DISCONNECTED", "UNDER_REVIEW", "CANCELLED"] },
+        "currentRound": { "type": "number" },
+        "totalRounds": { "type": "number" },
+        "roundSeed": { "type": "string" },
+        "scheduledStartTime": { "type": "string", "format": "date-time" },
+        "antiCheatRiskScore": { "type": "number" },
+        "antiCheatFlagged": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "gameId", "status", "currentRound", "totalRounds", "scheduledStartTime", "createdAt", "updatedAt"]
+    },
+    "MatchEvent": {
+      "title": "MatchEvent",
+      "description": "Replayable event log item for telemetry and dispute review.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "matchId": { "type": "string" },
+        "userId": { "type": "string" },
+        "eventType": { "type": "string" },
+        "round": { "type": "number" },
+        "clientTimestamp": { "type": "number" },
+        "serverTimestamp": { "type": "number" },
+        "deltaMs": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "matchId", "userId", "eventType", "round", "serverTimestamp", "createdAt", "updatedAt"]
+    },
+    "MatchResult": {
+      "title": "MatchResult",
+      "description": "Server-verified immutable result of a match.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "matchId": { "type": "string" },
+        "player1Id": { "type": "string" },
+        "player2Id": { "type": "string" },
+        "player1FinalScore": { "type": "number" },
+        "player2FinalScore": { "type": "number" },
+        "isForfeit": { "type": "boolean" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "verifiedByServer": { "type": "boolean" },
+        "auditHash": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "matchId", "player1Id", "player2Id", "player1FinalScore", "player2FinalScore", "verifiedByServer", "auditHash", "createdAt", "updatedAt"]
+    },
+    "FairPlayCase": {
+      "title": "FairPlayCase",
+      "description": "Anti-cheat investigation dossier reviewed by AI and human moderators.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "matchId": { "type": "string" },
+        "suspectUserId": { "type": "string" },
+        "suspectAlias": { "type": "string" },
+        "classification": { "type": "string", "enum": ["NORMAL", "REVIEW_REQUIRED", "HIGH_RISK"] },
+        "riskScore": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending_review", "resolved", "appealed", "dismissed"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "matchId", "suspectUserId", "classification", "riskScore", "status", "createdAt", "updatedAt"]
+    },
+    "Dispute": {
+      "title": "Dispute",
+      "description": "Player-initiated contestation of match outcomes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "matchId": { "type": "string" },
+        "petitionerUserId": { "type": "string" },
+        "reason": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "investigating", "resolved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "matchId", "petitionerUserId", "reason", "description", "status", "createdAt", "updatedAt"]
+    },
+    "InAppNotification": {
+      "title": "InAppNotification",
+      "description": "In-app notifications for tournament schedules and fair-play decisions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "type", "title", "message", "read", "createdAt", "updatedAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable ledger of all sensitive admin, moderator, and organizer decisions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "actorUserId": { "type": "string" },
+        "actorRole": { "type": "string" },
+        "action": { "type": "string" },
+        "targetResource": { "type": "string" },
+        "targetResourceId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "actorUserId", "actorRole", "action", "targetResource", "targetResourceId", "timestamp", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Private user identity records."
+    },
+    "/playerProfiles/{userId}": {
+      "schema": "PlayerProfile",
+      "description": "Public competitive gaming profiles and anonymous identities."
+    },
+    "/teams/{teamId}": {
+      "schema": "Team",
+      "description": "Esports teams."
+    },
+    "/tournaments/{tournamentId}": {
+      "schema": "Tournament",
+      "description": "Public tournament listings and tournament settings."
+    },
+    "/tournaments/{tournamentId}/registrations/{registrationId}": {
+      "schema": "TournamentRegistration",
+      "description": "Registrations sub-collection for a tournament."
+    },
+    "/matches/{matchId}": {
+      "schema": "Match",
+      "description": "Server-authoritative matches."
+    },
+    "/matches/{matchId}/events/{eventId}": {
+      "schema": "MatchEvent",
+      "description": "Append-only telemetry and click event logs for replay."
+    },
+    "/matchResults/{resultId}": {
+      "schema": "MatchResult",
+      "description": "Immutable server-verified match results."
+    },
+    "/fairPlayCases/{caseId}": {
+      "schema": "FairPlayCase",
+      "description": "Anti-cheat investigation dossiers."
+    },
+    "/disputes/{disputeId}": {
+      "schema": "Dispute",
+      "description": "Player appeals and disputes."
+    },
+    "/notifications/{notificationId}": {
+      "schema": "InAppNotification",
+      "description": "Player in-app notifications."
+    },
+    "/auditLogs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Append-only immutable audit trail."
+    }
+  }
+}
